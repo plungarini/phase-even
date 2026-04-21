@@ -4,9 +4,12 @@ import type { CycleSnapshot } from '../biorhythm';
 import { renderCycleChartPng } from './chart-image';
 import {
   BODY_INNER_PX,
+  CHART_HEIGHT,
   CHART_LAYOUT,
+  CHART_WIDTH,
   CONTAINER,
   EMPTY_LAYOUT,
+  HEADER_INNER_PX,
   ROW_INNER_PX,
 } from './layout';
 import type { PhaseState } from './store';
@@ -36,16 +39,23 @@ function trendWord(arrow: string): string {
   return 'rising';
 }
 
+function cycleSymbol(label: string): string {
+  if (label === 'Physical') return '▲';
+  if (label === 'Emotional') return '●';
+  return '◆';
+}
+
 function rowText(label: string, cycle: CycleSnapshot): string {
+  const labelWithSymbol = `${cycleSymbol(label)}  ${label}`;
   return [
-    alignRow(label, pct(cycle.value), ROW_INNER_PX),
+    alignRow(labelWithSymbol, pct(cycle.value), ROW_INNER_PX),
     alignRow(trendWord(cycle.arrow), `day ${cycle.day}/${cycle.period}`, ROW_INNER_PX),
   ].join('\n');
 }
 
 export async function renderHudState(state: PhaseState): Promise<HudRenderState> {
   const clock = formatClockTime(new Date());
-  const header = `${clock}   •   ${formatHeaderDate(state.today)}   •   phase`;
+  const header = alignRow(`${clock}   •   ${formatHeaderDate(state.today)}`, 'phase', HEADER_INNER_PX);
 
   if (!state.birthDate || state.cycles.length !== 3) {
     const body = [
@@ -67,9 +77,9 @@ export async function renderHudState(state: PhaseState): Promise<HudRenderState>
 
   const [phys, emo, intel] = state.cycles;
   const charts = await Promise.all([
-    renderCycleChartPng(phys, 288, 32),
-    renderCycleChartPng(emo, 288, 32),
-    renderCycleChartPng(intel, 288, 32),
+    renderCycleChartPng(phys, CHART_WIDTH, CHART_HEIGHT),
+    renderCycleChartPng(emo, CHART_WIDTH, CHART_HEIGHT),
+    renderCycleChartPng(intel, CHART_WIDTH, CHART_HEIGHT),
   ]);
 
   return {
