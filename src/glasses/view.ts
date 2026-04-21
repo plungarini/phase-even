@@ -7,7 +7,6 @@ import {
   CHART_LAYOUT,
   CONTAINER,
   EMPTY_LAYOUT,
-  HEADER_INNER_PX,
   ROW_INNER_PX,
 } from './layout';
 import type { PhaseState } from './store';
@@ -15,16 +14,15 @@ import { alignRow, centerLine } from './text-utils';
 import type { HudRenderState } from './types';
 
 const SHORT_MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const FOOTER_INNER_PX = 524;
 
 function formatClockTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function formatDate(iso: string): string {
+function formatHeaderDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
-  return `${SHORT_MONTH[m - 1]} ${d}, ${y}`;
+  return `${SHORT_MONTH[m - 1]} ${d}`;
 }
 
 function pct(v: number): string {
@@ -47,7 +45,7 @@ function rowText(label: string, cycle: CycleSnapshot): string {
 
 export async function renderHudState(state: PhaseState): Promise<HudRenderState> {
   const clock = formatClockTime(new Date());
-  const header = alignRow(clock, 'phase', HEADER_INNER_PX);
+  const header = `${clock}   •   ${formatHeaderDate(state.today)}   •   phase`;
 
   if (!state.birthDate || state.cycles.length !== 3) {
     const body = [
@@ -55,8 +53,7 @@ export async function renderHudState(state: PhaseState): Promise<HudRenderState>
       centerLine('Set your birth date', BODY_INNER_PX),
       centerLine('in the Phase app on your phone', BODY_INNER_PX),
       '',
-      '',
-      centerLine(formatDate(state.today), BODY_INNER_PX),
+      centerLine('Stored only on this device', BODY_INNER_PX),
     ].join('\n');
     return {
       layout: EMPTY_LAYOUT,
@@ -84,7 +81,6 @@ export async function renderHudState(state: PhaseState): Promise<HudRenderState>
       [CONTAINER.physicalRow]: rowText('Physical', phys),
       [CONTAINER.emotionalRow]: rowText('Emotional', emo),
       [CONTAINER.intellectualRow]: rowText('Intellect', intel),
-      [CONTAINER.footer]: centerLine(formatDate(state.today), FOOTER_INNER_PX),
     },
     imageContents: {
       [CONTAINER.physicalChart]: charts[0],

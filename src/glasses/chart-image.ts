@@ -33,7 +33,7 @@ export async function renderCycleChartPng(
 ): Promise<Uint8Array> {
   const { canvas, ctx } = getCanvas(width, height);
   const paddingX = 6;
-  const paddingY = 5;
+  const paddingY = 7;
   const values = sampleCycleCurve(cycle.period, SAMPLE_COUNT);
   const innerWidth = width - paddingX * 2;
   const markerX = paddingX + (cycle.day / Math.max(cycle.period - 1, 1)) * innerWidth;

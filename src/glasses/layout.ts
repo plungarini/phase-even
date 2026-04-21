@@ -1,12 +1,12 @@
 // layout.ts — HUD container layout for Phase.
-// Empty state stays text-only. The chart state uses a shield, header, framed body,
-// three text rows, three image charts, and a footer date.
+// Matches the shared shell proportions from the-void / smokeless:
+// 40px header, 37px body start, 8px border radius.
 
 import type { HudLayoutDescriptor } from './types';
 
 export const HUD_WIDTH = 576;
 export const HUD_HEIGHT = 288;
-export const HUD_BORDER_RADIUS = 24;
+export const HUD_BORDER_RADIUS = 8;
 
 export const CONTAINER = {
   shield: 'shield',
@@ -16,23 +16,27 @@ export const CONTAINER = {
   physicalRow: 'physical-row',
   emotionalRow: 'emotional-row',
   intellectualRow: 'intellectual-row',
-  footer: 'footer',
   physicalChart: 'physical-chart',
   emotionalChart: 'emotional-chart',
   intellectualChart: 'intellectual-chart',
 } as const;
 
-const HEADER_HEIGHT = 36;
-const BODY_Y = HEADER_HEIGHT + 6;
-const FRAME_Y = 44;
-const FRAME_HEIGHT = 232;
+const HEADER_HEIGHT = 40;
+const BODY_Y = 37;
+const BODY_HEIGHT = HUD_HEIGHT - BODY_Y;
+const FRAME_Y = BODY_Y;
+const FRAME_HEIGHT = BODY_HEIGHT;
 const ROW_X = 24;
-const ROW_WIDTH = 214;
-const ROW_HEIGHT = 36;
-const ROW_PADDING = 2;
-const CHART_X = 250;
+const ROW_WIDTH = 212;
+const ROW_HEIGHT = 58;
+const ROW_PADDING = 4;
+const CHART_X = 248;
 const CHART_WIDTH = 288;
-const CHART_HEIGHT = 32;
+const CHART_HEIGHT = 42;
+const PHYSICAL_ROW_Y = 56;
+const EMOTIONAL_ROW_Y = 118;
+const INTELLECTUAL_ROW_Y = 180;
+const CHART_Y_OFFSET = 8;
 
 export const EMPTY_LAYOUT: HudLayoutDescriptor = {
   key: 'phase.empty.v1',
@@ -63,7 +67,7 @@ export const EMPTY_LAYOUT: HudLayoutDescriptor = {
       xPosition: 0,
       yPosition: BODY_Y,
       width: HUD_WIDTH,
-      height: HUD_HEIGHT - BODY_Y,
+      height: BODY_HEIGHT,
       paddingLength: 15,
       borderWidth: 1,
       borderColor: 13,
@@ -74,7 +78,7 @@ export const EMPTY_LAYOUT: HudLayoutDescriptor = {
 };
 
 export const CHART_LAYOUT: HudLayoutDescriptor = {
-  key: 'phase.chart.v2',
+  key: 'phase.chart.v3',
   textDescriptors: [
     {
       containerID: 0,
@@ -112,7 +116,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 3,
       containerName: CONTAINER.physicalRow,
       xPosition: ROW_X,
-      yPosition: 64,
+      yPosition: PHYSICAL_ROW_Y,
       width: ROW_WIDTH,
       height: ROW_HEIGHT,
       paddingLength: ROW_PADDING,
@@ -121,7 +125,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 4,
       containerName: CONTAINER.emotionalRow,
       xPosition: ROW_X,
-      yPosition: 118,
+      yPosition: EMOTIONAL_ROW_Y,
       width: ROW_WIDTH,
       height: ROW_HEIGHT,
       paddingLength: ROW_PADDING,
@@ -130,19 +134,10 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 5,
       containerName: CONTAINER.intellectualRow,
       xPosition: ROW_X,
-      yPosition: 172,
+      yPosition: INTELLECTUAL_ROW_Y,
       width: ROW_WIDTH,
       height: ROW_HEIGHT,
       paddingLength: ROW_PADDING,
-    },
-    {
-      containerID: 6,
-      containerName: CONTAINER.footer,
-      xPosition: 24,
-      yPosition: 228,
-      width: HUD_WIDTH - 48,
-      height: 28,
-      paddingLength: 2,
     },
   ],
   imageDescriptors: [
@@ -150,7 +145,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 20,
       containerName: CONTAINER.physicalChart,
       xPosition: CHART_X,
-      yPosition: 66,
+      yPosition: PHYSICAL_ROW_Y + CHART_Y_OFFSET,
       width: CHART_WIDTH,
       height: CHART_HEIGHT,
     },
@@ -158,7 +153,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 21,
       containerName: CONTAINER.emotionalChart,
       xPosition: CHART_X,
-      yPosition: 120,
+      yPosition: EMOTIONAL_ROW_Y + CHART_Y_OFFSET,
       width: CHART_WIDTH,
       height: CHART_HEIGHT,
     },
@@ -166,7 +161,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       containerID: 22,
       containerName: CONTAINER.intellectualChart,
       xPosition: CHART_X,
-      yPosition: 174,
+      yPosition: INTELLECTUAL_ROW_Y + CHART_Y_OFFSET,
       width: CHART_WIDTH,
       height: CHART_HEIGHT,
     },
