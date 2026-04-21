@@ -3,12 +3,11 @@
 import { waitForEvenAppBridge } from '@evenrealities/even_hub_sdk';
 
 import { initEventDispatcher } from './glasses/events';
-import { LAYOUT } from './glasses/layout';
 import { HudSession } from './glasses/session';
 import { loadPersistedBirthDate, mirrorBirthDateToSdk } from './glasses/storage';
 import { store } from './glasses/store';
 import { startTick } from './glasses/tick';
-import { renderContents } from './glasses/view';
+import { renderHudState } from './glasses/view';
 
 async function boot(): Promise<void> {
   let bridge;
@@ -28,9 +27,10 @@ async function boot(): Promise<void> {
   // Serialise renders: the next one only fires once the previous has resolved.
   let pending: Promise<void> = Promise.resolve();
   const render = () => {
-    pending = pending.then(() =>
-      session.render({ layout: LAYOUT, textContents: renderContents(store.state) }),
-    );
+    pending = pending.then(async () => {
+      const next = await renderHudState(store.state);
+      await session.render(next);
+    });
   };
 
   store.subscribe(render);

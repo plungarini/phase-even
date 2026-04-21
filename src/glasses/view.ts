@@ -1,11 +1,21 @@
-// view.ts — Format PhaseState into the 3 container contents.
-// Header: time · app name.  Body: title + 3 centered cycle rows + date line.
+// view.ts — Format PhaseState into HUD text and image containers.
 
-import { BODY_INNER_PX, CONTAINER, HEADER_INNER_PX } from './layout';
+import type { CycleSnapshot } from '../biorhythm';
+import { renderCycleChartPng } from './chart-image';
+import {
+  BODY_INNER_PX,
+  CHART_LAYOUT,
+  CONTAINER,
+  EMPTY_LAYOUT,
+  HEADER_INNER_PX,
+  ROW_INNER_PX,
+} from './layout';
 import type { PhaseState } from './store';
 import { alignRow, centerLine } from './text-utils';
+import type { HudRenderState } from './types';
 
 const SHORT_MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const FOOTER_INNER_PX = 524;
 
 function formatClockTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -22,14 +32,20 @@ function pct(v: number): string {
   return `${s}${Math.round(v * 100)}%`;
 }
 
-function cycleRow(label: string, arrow: string, percent: string, day: number, period: number): string {
-  // The body is proportional-font text; we use pretext-measured alignRow on
-  // a single-column layout. Columns separated by triple spaces render as a
-  // visible gap on the G2 font.
-  return `${label}   ${arrow}   ${percent}   day ${day}/${period}`;
+function trendWord(arrow: string): string {
+  if (arrow === '↓') return 'falling';
+  if (arrow === '→') return 'steady';
+  return 'rising';
 }
 
-export function renderContents(state: PhaseState): Record<string, string> {
+function rowText(label: string, cycle: CycleSnapshot): string {
+  return [
+    alignRow(label, pct(cycle.value), ROW_INNER_PX),
+    alignRow(trendWord(cycle.arrow), `day ${cycle.day}/${cycle.period}`, ROW_INNER_PX),
+  ].join('\n');
+}
+
+export async function renderHudState(state: PhaseState): Promise<HudRenderState> {
   const clock = formatClockTime(new Date());
   const header = alignRow(clock, 'phase', HEADER_INNER_PX);
 
@@ -42,20 +58,38 @@ export function renderContents(state: PhaseState): Record<string, string> {
       '',
       centerLine(formatDate(state.today), BODY_INNER_PX),
     ].join('\n');
-    return { [CONTAINER.shield]: ' ', [CONTAINER.header]: header, [CONTAINER.body]: body };
+    return {
+      layout: EMPTY_LAYOUT,
+      textContents: {
+        [CONTAINER.shield]: ' ',
+        [CONTAINER.header]: header,
+        [CONTAINER.body]: body,
+      },
+    };
   }
 
   const [phys, emo, intel] = state.cycles;
-  const body = [
-    '',
-    centerLine(cycleRow('Physical ', phys.arrow, pct(phys.value), phys.day, phys.period), BODY_INNER_PX),
-    '',
-    centerLine(cycleRow('Emotional', emo.arrow, pct(emo.value), emo.day, emo.period), BODY_INNER_PX),
-    '',
-    centerLine(cycleRow('Intellect', intel.arrow, pct(intel.value), intel.day, intel.period), BODY_INNER_PX),
-    '',
-    centerLine(formatDate(state.today), BODY_INNER_PX),
-  ].join('\n');
+  const charts = await Promise.all([
+    renderCycleChartPng(phys, 288, 32),
+    renderCycleChartPng(emo, 288, 32),
+    renderCycleChartPng(intel, 288, 32),
+  ]);
 
-  return { [CONTAINER.shield]: ' ', [CONTAINER.header]: header, [CONTAINER.body]: body };
+  return {
+    layout: CHART_LAYOUT,
+    textContents: {
+      [CONTAINER.shield]: ' ',
+      [CONTAINER.header]: header,
+      [CONTAINER.frame]: ' ',
+      [CONTAINER.physicalRow]: rowText('Physical', phys),
+      [CONTAINER.emotionalRow]: rowText('Emotional', emo),
+      [CONTAINER.intellectualRow]: rowText('Intellect', intel),
+      [CONTAINER.footer]: centerLine(formatDate(state.today), FOOTER_INNER_PX),
+    },
+    imageContents: {
+      [CONTAINER.physicalChart]: charts[0],
+      [CONTAINER.emotionalChart]: charts[1],
+      [CONTAINER.intellectualChart]: charts[2],
+    },
+  };
 }

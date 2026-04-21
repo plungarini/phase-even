@@ -8,6 +8,8 @@
 
 import {
   CreateStartUpPageContainer,
+  ImageContainerProperty,
+  ImageRawDataUpdate,
   RebuildPageContainer,
   StartUpPageCreateResult,
   TextContainerProperty,
@@ -22,6 +24,7 @@ const MAX_CONTENT_CHARS = 900;  // startup/rebuild cap per SDK docs (1000, with 
 let pageCreated = false;
 let activeLayoutKey: string | null = null;
 let lastContents: Record<string, string> = {};
+let lastImageHashes: Record<string, number> = {};
 
 function truncate(v: string, max: number): string {
   return v.length <= max ? v : v.slice(0, Math.max(0, max - 1)) + '…';
@@ -29,7 +32,7 @@ function truncate(v: string, max: number): string {
 
 function instantiate(layout: HudLayoutDescriptor, contents: Record<string, string>) {
   return {
-    containerTotalNum: layout.textDescriptors.length,
+    containerTotalNum: layout.textDescriptors.length + (layout.imageDescriptors?.length ?? 0),
     textObject: layout.textDescriptors.map(
       (d) =>
         new TextContainerProperty({
@@ -37,7 +40,22 @@ function instantiate(layout: HudLayoutDescriptor, contents: Record<string, strin
           content: truncate(contents[d.containerName] ?? ' ', MAX_CONTENT_CHARS),
         }),
     ),
+    imageObject: (layout.imageDescriptors ?? []).map(
+      (d) =>
+        new ImageContainerProperty({
+          ...d,
+        }),
+    ),
   };
+}
+
+function hashBytes(bytes: Uint8Array): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    hash ^= bytes[i]!;
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
 }
 
 export class HudSession {
@@ -60,6 +78,7 @@ export class HudSession {
         pageCreated = true;
         activeLayoutKey = next.layout.key;
         lastContents = { ...next.textContents };
+        await this.applyImages(next, true);
         return;
       }
       // The SDK may already have a page (e.g., HMR reload). Fall back to rebuild.
@@ -86,6 +105,8 @@ export class HudSession {
       pageCreated = true;
       activeLayoutKey = next.layout.key;
       lastContents = { ...next.textContents };
+      lastImageHashes = {};
+      await this.applyImages(next, true);
     } catch (err) {
       console.error('[HudSession] rebuildPageContainer threw', err);
     }
@@ -113,6 +134,30 @@ export class HudSession {
         lastContents[d.containerName] = content;
       } catch (err) {
         console.error('[HudSession] textContainerUpgrade threw', err, 'container:', d.containerName);
+      }
+    }
+    await this.applyImages(next, false);
+  }
+
+  private async applyImages(next: HudRenderState, force: boolean): Promise<void> {
+    if (!next.layout.imageDescriptors?.length || !next.imageContents) return;
+
+    for (const d of next.layout.imageDescriptors) {
+      const bytes = next.imageContents[d.containerName];
+      if (!bytes?.length) continue;
+      const hash = hashBytes(bytes);
+      if (!force && lastImageHashes[d.containerName] === hash) continue;
+      try {
+        await this.bridge.updateImageRawData(
+          new ImageRawDataUpdate({
+            containerID: d.containerID,
+            containerName: d.containerName,
+            imageData: bytes,
+          }),
+        );
+        lastImageHashes[d.containerName] = hash;
+      } catch (err) {
+        console.error('[HudSession] updateImageRawData threw', err, 'container:', d.containerName);
       }
     }
   }
