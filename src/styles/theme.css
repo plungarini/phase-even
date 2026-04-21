@@ -1,0 +1,37 @@
+:root {
+  --phase-bg: #080b09;
+  --phase-surface: rgba(20, 26, 22, 0.76);
+  --phase-surface-elevated: rgba(28, 36, 30, 0.86);
+  --phase-accent: #7dff9a;
+  --phase-accent-soft: rgba(125, 255, 154, 0.18);
+  --phase-text: #eef4ef;
+  --phase-text-dim: rgba(238, 244, 239, 0.58);
+  --phase-text-faint: rgba(238, 244, 239, 0.32);
+  --phase-danger: #ff8f8f;
+  --phase-positive: #7dff9a;
+}
+
+@theme inline {
+  --color-bg: var(--phase-bg);
+  --color-surface: var(--phase-surface);
+  --color-surface-light: var(--phase-surface-elevated);
+  --color-surface-lighter: color-mix(in srgb, var(--phase-surface-elevated) 82%, white 18%);
+  --color-accent: var(--phase-accent);
+  --color-accent-alpha: var(--phase-accent-soft);
+  --color-accent-warning: #d6d3c9;
+  --color-text: var(--phase-text);
+  --color-text-dim: var(--phase-text-dim);
+  --color-text-muted: var(--phase-text-faint);
+  --color-text-highlight: var(--phase-text);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.04);
+  --color-positive: var(--phase-positive);
+  --color-positive-alpha: color-mix(in srgb, var(--phase-positive) 18%, transparent);
+  --color-negative: var(--phase-danger);
+  --color-negative-alpha: color-mix(in srgb, var(--phase-danger) 14%, transparent);
+  --color-overlay: rgba(0, 0, 0, 0.65);
+  --color-input-bg: rgba(255, 255, 255, 0.04);
+  --font-display: 'DM Serif Display', serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}

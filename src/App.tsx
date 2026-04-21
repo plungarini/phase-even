@@ -1,140 +1,223 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AppShell, NavBar, ScreenHeader, Card } from 'even-toolkit/web';
-import type { NavItem } from 'even-toolkit/web';
-import { AppGlasses } from './glasses/AppGlasses';
-import type { AppSnapshot } from './glasses/shared';
-import { computeAll } from './biorhythm';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
-const tabs: NavItem[] = [
-  { id: 'home', label: 'Home' },
-  { id: 'settings', label: 'Settings' },
-];
+import type { CycleSnapshot } from './biorhythm';
+import { BottomTabBar, type PhaseTab } from './components/BottomTabBar';
+import { PageHeader } from './components/PageHeader';
+import { store } from './glasses/store';
 
-const STORAGE_KEY = 'phase:birthDate';
+const LOCAL_KEY = 'phase:birthDate';
 
-function todayISO(): string {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
+function subscribe(fn: () => void) {
+  return store.subscribe(fn);
 }
-
-function parseISO(iso: string): Date | null {
-  const [y, m, d] = iso.split('-').map(Number);
-  if (!y || !m || !d) return null;
-  return new Date(y, m - 1, d);
+function getSnapshot() {
+  return store.state;
 }
 
 function pctLabel(v: number): string {
-  return `${Math.round(v * 100)}%`;
+  const sign = v >= 0 ? '+' : '';
+  return `${sign}${Math.round(v * 100)}%`;
+}
+
+function arrowBadgeClass(arrow: string): string {
+  if (arrow === '↓') return 'phase-arrow-badge is-down';
+  if (arrow === '→') return 'phase-arrow-badge is-flat';
+  return 'phase-arrow-badge';
+}
+
+function pctClass(v: number): string {
+  if (v > 0.02) return 'phase-pct phase-pct-up';
+  if (v < -0.02) return 'phase-pct phase-pct-down';
+  return 'phase-pct';
+}
+
+function CycleCard({ cycle }: { cycle: CycleSnapshot }) {
+  return (
+    <div className="phase-cycle-card">
+      <div className="min-w-0">
+        <div className="phase-cycle-kind">{cycle.key}</div>
+        <div className="phase-cycle-meta">
+          day {cycle.day} / {cycle.period}
+        </div>
+        <div className="phase-waveform truncate">{cycle.waveform}</div>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <div className={pctClass(cycle.value)}>{pctLabel(cycle.value)}</div>
+        <span className={arrowBadgeClass(cycle.arrow)} aria-hidden>
+          {cycle.arrow}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function HomeTab({
+  state,
+  onGoToSettings,
+}: {
+  state: ReturnType<typeof getSnapshot>;
+  onGoToSettings: () => void;
+}) {
+  if (!state.birthDate || state.cycles.length !== 3) {
+    return (
+      <div className="phase-fade-in flex h-full flex-col">
+        <PageHeader
+          eyebrow="Phase"
+          title={
+            <>
+              Three cycles,
+              <br />
+              <em>one day.</em>
+            </>
+          }
+        />
+        <div className="flex-1 px-5 pb-40">
+          <div className="phase-glass-card phase-empty">
+            <div className="phase-empty-orb" aria-hidden />
+            <div className="phase-eyebrow">No birth date</div>
+            <p className="phase-disclaimer max-w-xs">
+              Phase needs your birth date to compute the physical, emotional, and
+              intellectual cycles. Stored on-device.
+            </p>
+            <button type="button" className="phase-cta mt-2" onClick={onGoToSettings}>
+              Set birth date
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const avg =
+    state.cycles.reduce((acc, c) => acc + c.value, 0) / state.cycles.length;
+
+  return (
+    <div className="phase-fade-in flex h-full flex-col">
+      <PageHeader
+        eyebrow={state.today}
+        title={
+          <>
+            Today you are
+            <br />
+            <em>in phase.</em>
+          </>
+        }
+      />
+      <div className="flex-1 overflow-y-auto px-5 pb-40">
+        <div className="phase-glass-card p-6">
+          <div className="phase-section-label">Composite</div>
+          <div className="phase-big-stat mt-2">
+            {pctLabel(avg)}
+            <em>.</em>
+          </div>
+          <div className="mt-5 flex flex-col gap-3">
+            {state.cycles.map((c) => (
+              <CycleCard key={c.key} cycle={c} />
+            ))}
+          </div>
+        </div>
+
+        <div className="phase-glass-card mt-4 p-5">
+          <p className="phase-disclaimer">
+            Biorhythm theory is <em>pseudoscience</em> with no empirical support.
+            Phase renders it honestly: an aesthetic object, not a health tool.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab({
+  birthDate,
+  today,
+  onChange,
+  onClear,
+}: {
+  birthDate: string | null;
+  today: string;
+  onChange: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="phase-fade-in flex h-full flex-col">
+      <PageHeader
+        eyebrow="Settings"
+        title={
+          <>
+            Your
+            <br />
+            <em>birth date.</em>
+          </>
+        }
+      />
+      <div className="flex-1 overflow-y-auto px-5 pb-40">
+        <div className="phase-glass-card p-5">
+          <div className="phase-section-label mb-3">Birthday</div>
+          <input
+            type="date"
+            className="phase-date-input"
+            value={birthDate ?? ''}
+            max={today}
+            onChange={(e) => {
+              if (e.target.value) onChange(e.target.value);
+            }}
+          />
+          {birthDate ? (
+            <div className="mt-4 flex items-center justify-between">
+              <span className="phase-date-pill">{birthDate}</span>
+              <button type="button" className="phase-cta is-ghost" onClick={onClear}>
+                Clear
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="phase-glass-card mt-4 p-5">
+          <p className="phase-disclaimer">
+            Stored locally in your browser and, on the glasses, in the Even Hub
+            app's sandboxed storage. <em>Never sent to a server.</em>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
-  const [tab, setTab] = useState('home');
-  const [birthDate, setBirthDate] = useState<string | null>(() =>
-    typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null,
-  );
-  const [today, setToday] = useState(todayISO());
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const [tab, setTab] = useState<PhaseTab>('home');
 
-  // Re-compute today daily (in case the app stays open past midnight).
   useEffect(() => {
-    const id = setInterval(() => setToday(todayISO()), 60_000);
-    return () => clearInterval(id);
+    const saved = localStorage.getItem(LOCAL_KEY);
+    if (saved && saved !== store.state.birthDate) store.setBirthDate(saved);
   }, []);
 
-  const snapshot: AppSnapshot = useMemo(() => {
-    const bd = birthDate ? parseISO(birthDate) : null;
-    const td = parseISO(today) ?? new Date();
-    return {
-      birthDate,
-      today,
-      cycles: bd ? computeAll(bd, td) : [],
-    };
-  }, [birthDate, today]);
-
-  const handleBirthChange = (v: string) => {
-    if (!v) return;
-    localStorage.setItem(STORAGE_KEY, v);
-    setBirthDate(v);
-  };
-
-  const clearBirth = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setBirthDate(null);
-  };
+  useEffect(() => {
+    return store.subscribe((s) => {
+      if (s.birthDate) localStorage.setItem(LOCAL_KEY, s.birthDate);
+      else localStorage.removeItem(LOCAL_KEY);
+    });
+  }, []);
 
   return (
-    <>
-      <AppGlasses snapshot={snapshot} />
-      <AppShell header={<NavBar items={tabs} activeId={tab} onNavigate={setTab} />}>
-        <div className="px-3 pt-4 pb-8 space-y-3">
-          <ScreenHeader title="Phase" subtitle="Biorhythm engine (pseudoscience, beautifully)" />
+    <div className="phase-app-shell relative h-dvh overflow-hidden">
+      <div className="phase-ornament phase-ornament-top" aria-hidden />
+      <div className="phase-ornament phase-ornament-bottom" aria-hidden />
 
-          {tab === 'home' && (
-            <>
-              {!birthDate && (
-                <Card>
-                  <p className="text-[15px] text-text-dim">
-                    Set your birth date in Settings to see your cycles.
-                  </p>
-                </Card>
-              )}
-              {birthDate && snapshot.cycles.length === 3 && (
-                <Card>
-                  <div className="space-y-2 font-mono text-[13px] leading-relaxed">
-                    {snapshot.cycles.map((c) => (
-                      <div key={c.key} className="flex items-center justify-between gap-2">
-                        <span className="capitalize w-24">{c.key}</span>
-                        <span className="flex-1 truncate">{c.waveform}</span>
-                        <span className="w-10 text-right">{pctLabel(c.value)}</span>
-                        <span className="w-4 text-right">{c.arrow}</span>
-                      </div>
-                    ))}
-                    <div className="pt-2 text-text-dim">
-                      {today} · Day{' '}
-                      {snapshot.cycles.map((c, i) => (
-                        <span key={c.key}>
-                          {i > 0 ? ' · ' : ''}
-                          {c.key[0].toUpperCase()}
-                          {c.day}/{c.period}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              )}
-              <Card>
-                <p className="text-[13px] text-text-dim">
-                  Three sinusoidal cycles keyed to your birth date: Physical (23d),
-                  Emotional (28d), Intellectual (33d). This is pseudoscience. It's an
-                  aesthetic object, not a health tool.
-                </p>
-              </Card>
-            </>
-          )}
-
-          {tab === 'settings' && (
-            <Card>
-              <label className="block text-[13px] text-text-dim mb-2">Birth date</label>
-              <input
-                type="date"
-                value={birthDate ?? ''}
-                max={today}
-                onChange={(e) => handleBirthChange(e.target.value)}
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-[15px]"
-              />
-              {birthDate && (
-                <button
-                  onClick={clearBirth}
-                  className="mt-3 text-[13px] text-text-dim underline"
-                >
-                  Clear
-                </button>
-              )}
-            </Card>
-          )}
-        </div>
-      </AppShell>
-    </>
+      <div className="relative mx-auto flex h-full max-w-md flex-col">
+        {tab === 'home' ? (
+          <HomeTab state={state} onGoToSettings={() => setTab('settings')} />
+        ) : (
+          <SettingsTab
+            birthDate={state.birthDate}
+            today={state.today}
+            onChange={(v) => store.setBirthDate(v)}
+            onClear={() => store.setBirthDate(null)}
+          />
+        )}
+        <BottomTabBar activeTab={tab} onChange={setTab} />
+      </div>
+    </div>
   );
 }
