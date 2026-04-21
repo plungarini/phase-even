@@ -42,31 +42,29 @@ export function CycleSparkline({ cycle }: { cycle: CycleSnapshot }) {
   const toneClass = cycle.value < -0.02 ? 'is-negative' : 'is-positive';
 
   return (
-    <div className={`phase-cycle-chart-shell ${toneClass}`}>
-      <svg
-        className="phase-cycle-chart"
-        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-        role="img"
-        aria-label={`${cycle.key} cycle chart`}
-      >
-        <line
-          className="phase-cycle-chart-axis"
-          x1={PADDING_X}
-          y1={SVG_HEIGHT / 2}
-          x2={SVG_WIDTH - PADDING_X}
-          y2={SVG_HEIGHT / 2}
-        />
-        <path className="phase-cycle-chart-area" d={areaPath} />
-        <path className="phase-cycle-chart-line" d={linePath} />
-        <line
-          className="phase-cycle-chart-marker-line"
-          x1={markerX}
-          y1={PADDING_Y}
-          x2={markerX}
-          y2={SVG_HEIGHT - PADDING_Y}
-        />
-        <circle className="phase-cycle-chart-marker" cx={markerX} cy={markerY} r="4.5" />
-      </svg>
-    </div>
+    <svg
+      className={`phase-cycle-chart ${toneClass}`}
+      viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+      role="img"
+      aria-label={`${cycle.key} cycle chart`}
+    >
+      <line
+        className="phase-cycle-chart-axis"
+        x1={PADDING_X}
+        y1={SVG_HEIGHT / 2}
+        x2={SVG_WIDTH - PADDING_X}
+        y2={SVG_HEIGHT / 2}
+      />
+      <path className="phase-cycle-chart-area" d={areaPath} />
+      <path className="phase-cycle-chart-line" d={linePath} />
+      <line
+        className="phase-cycle-chart-marker-line"
+        x1={markerX}
+        y1={PADDING_Y}
+        x2={markerX}
+        y2={SVG_HEIGHT - PADDING_Y}
+      />
+      <circle className="phase-cycle-chart-marker" cx={markerX} cy={markerY} r="4.5" />
+    </svg>
   );
 }
