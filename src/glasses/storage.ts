@@ -1,28 +1,70 @@
 // storage.ts — Persist birthDate via the SDK's local storage bridge.
-// Keeps web localStorage and SDK storage in sync when the webview runs on the phone.
+// The bridge is the source of truth for both the webview and the HUD.
 
-import type { EvenAppBridge } from '@evenrealities/even_hub_sdk';
+import { waitForEvenAppBridge, type EvenAppBridge } from '@evenrealities/even_hub_sdk';
 import { store } from './store';
 
 export const STORAGE_KEY = 'phase:birthDate';
 
-export async function loadPersistedBirthDate(bridge: EvenAppBridge): Promise<void> {
-  try {
-    const saved = await bridge.getLocalStorage(STORAGE_KEY);
-    if (saved) store.setBirthDate(saved);
-  } catch (err) {
-    console.warn('[Phase:storage] load failed', err);
+let activeBridge: EvenAppBridge | null = null;
+let initPromise: Promise<void> | null = null;
+let syncStarted = false;
+let lastSavedValue = '';
+
+async function hydrate(bridge: EvenAppBridge): Promise<void> {
+  console.log('[Phase:storage] hydrating from bridge');
+  const saved = await bridge.getLocalStorage(STORAGE_KEY);
+  lastSavedValue = saved ?? '';
+  if (saved && saved !== store.state.birthDate) {
+    console.log('[Phase:storage] restored birth date', saved);
+    store.setBirthDate(saved);
+  } else {
+    console.log('[Phase:storage] no saved birth date in bridge');
   }
 }
 
-export function mirrorBirthDateToSdk(bridge: EvenAppBridge): () => void {
-  let last = store.state.birthDate;
-  return store.subscribe((state) => {
-    if (state.birthDate === last) return;
-    last = state.birthDate;
+function startSync(bridge: EvenAppBridge): void {
+  if (syncStarted) return;
+  syncStarted = true;
+  lastSavedValue = store.state.birthDate ?? '';
+  store.subscribe((state) => {
     const value = state.birthDate ?? '';
-    bridge.setLocalStorage(STORAGE_KEY, value).catch((err) =>
-      console.warn('[Phase:storage] save failed', err),
-    );
+    if (value === lastSavedValue) return;
+    lastSavedValue = value;
+    console.log('[Phase:storage] saving birth date to bridge', value || '<empty>');
+    bridge.setLocalStorage(STORAGE_KEY, value).then((ok) => {
+      if (!ok) {
+        console.warn('[Phase:storage] bridge save returned false');
+      }
+    }).catch((err) => {
+      console.error('[Phase:storage] save failed', err);
+    });
   });
+}
+
+export async function initBridgeStorage(bridge: EvenAppBridge): Promise<void> {
+  activeBridge = bridge;
+  if (!initPromise) {
+    initPromise = hydrate(bridge)
+      .catch((err) => {
+        console.warn('[Phase:storage] load failed', err);
+      })
+      .finally(() => {
+        startSync(bridge);
+      });
+  }
+  await initPromise;
+}
+
+export async function ensureBridgeStorageReady(): Promise<void> {
+  if (activeBridge) {
+    await initBridgeStorage(activeBridge);
+    return;
+  }
+  try {
+    const bridge = await waitForEvenAppBridge();
+    await initBridgeStorage(bridge);
+  } catch (err) {
+    console.warn('[Phase:storage] bridge unavailable for web sync', err);
+  }
 }

@@ -4,10 +4,10 @@ import type { CycleKey, CycleSnapshot } from './biorhythm';
 import { CYCLES } from './biorhythm';
 import { BottomTabBar, type PhaseTab } from './components/BottomTabBar';
 import { CycleSparkline } from './components/CycleSparkline';
+import { DebugPanel } from './debug/DebugPanel';
+import { ensureBridgeStorageReady } from './glasses/storage';
 import { PageHeader } from './components/PageHeader';
 import { store } from './glasses/store';
-
-const LOCAL_KEY = 'phase:birthDate';
 
 function subscribe(fn: () => void) {
   return store.subscribe(fn);
@@ -274,8 +274,8 @@ function SettingsTab({
 
         <div className="phase-glass-card mt-4 p-5">
           <p className="phase-disclaimer">
-            Stored locally in your browser and, on the glasses, in the Even Hub
-            app's sandboxed storage. <em>Never sent to a server.</em>
+            Stored in the Even Hub app&apos;s local bridge storage on your phone.
+            <em> Never sent to a server.</em>
           </p>
         </div>
       </div>
@@ -288,35 +288,30 @@ export default function App() {
   const [tab, setTab] = useState<PhaseTab>('home');
 
   useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved && saved !== store.state.birthDate) store.setBirthDate(saved);
-  }, []);
-
-  useEffect(() => {
-    return store.subscribe((s) => {
-      if (s.birthDate) localStorage.setItem(LOCAL_KEY, s.birthDate);
-      else localStorage.removeItem(LOCAL_KEY);
-    });
+    void ensureBridgeStorageReady();
   }, []);
 
   return (
-    <div className="phase-app-shell relative h-dvh overflow-hidden">
-      <div className="phase-ornament phase-ornament-top" aria-hidden />
-      <div className="phase-ornament phase-ornament-bottom" aria-hidden />
+    <>
+      <div className="phase-app-shell relative h-dvh overflow-hidden">
+        <div className="phase-ornament phase-ornament-top" aria-hidden />
+        <div className="phase-ornament phase-ornament-bottom" aria-hidden />
 
-      <div className="relative mx-auto flex h-full max-w-md flex-col">
-        {tab === 'home' ? (
-          <HomeTab state={state} onGoToSettings={() => setTab('settings')} />
-        ) : (
-          <SettingsTab
-            birthDate={state.birthDate}
-            today={state.today}
-            onChange={(v) => store.setBirthDate(v)}
-            onClear={() => store.setBirthDate(null)}
-          />
-        )}
-        <BottomTabBar activeTab={tab} onChange={setTab} />
+        <div className="relative mx-auto flex h-full max-w-md flex-col">
+          {tab === 'home' ? (
+            <HomeTab state={state} onGoToSettings={() => setTab('settings')} />
+          ) : (
+            <SettingsTab
+              birthDate={state.birthDate}
+              today={state.today}
+              onChange={(v) => store.setBirthDate(v)}
+              onClear={() => store.setBirthDate(null)}
+            />
+          )}
+          <BottomTabBar activeTab={tab} onChange={setTab} />
+        </div>
       </div>
-    </div>
+      {tab === 'settings' ? <DebugPanel /> : null}
+    </>
   );
 }
