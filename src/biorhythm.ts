@@ -35,6 +35,19 @@ export function trendArrow(day: number, period: number): '↑' | '↓' | '→' {
   return '→';
 }
 
+/**
+ * Sample one full cycle as normalized values across `samples` points.
+ * Used by both the webview SVG sparkline and the glasses PNG chart.
+ */
+export function sampleCycleCurve(period: number, samples: number): number[] {
+  if (samples <= 1) return [cycleValue(0, period)];
+  const maxDay = Math.max(period - 1, 1);
+  return Array.from({ length: samples }, (_, i) => {
+    const day = (i / (samples - 1)) * maxDay;
+    return cycleValue(day, period);
+  });
+}
+
 /** Block glyphs from empty → full. 9 levels map sin [-1,+1] → column. */
 const BLOCKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'] as const;
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import type { CycleSnapshot } from './biorhythm';
 import { BottomTabBar, type PhaseTab } from './components/BottomTabBar';
+import { CycleSparkline } from './components/CycleSparkline';
 import { PageHeader } from './components/PageHeader';
 import { store } from './glasses/store';
 
@@ -25,6 +26,12 @@ function arrowBadgeClass(arrow: string): string {
   return 'phase-arrow-badge';
 }
 
+function trendLabel(arrow: string): string {
+  if (arrow === '↓') return 'falling';
+  if (arrow === '→') return 'steady';
+  return 'rising';
+}
+
 function pctClass(v: number): string {
   if (v > 0.02) return 'phase-pct phase-pct-up';
   if (v < -0.02) return 'phase-pct phase-pct-down';
@@ -34,19 +41,24 @@ function pctClass(v: number): string {
 function CycleCard({ cycle }: { cycle: CycleSnapshot }) {
   return (
     <div className="phase-cycle-card">
-      <div className="min-w-0">
-        <div className="phase-cycle-kind">{cycle.key}</div>
-        <div className="phase-cycle-meta">
-          day {cycle.day} / {cycle.period}
+      <div className="phase-cycle-top">
+        <div className="min-w-0">
+          <div className="phase-cycle-kind">{cycle.key}</div>
+          <div className="phase-cycle-meta">
+            day {cycle.day} / {cycle.period}
+          </div>
         </div>
-        <div className="phase-waveform truncate">{cycle.waveform}</div>
+        <div className="flex flex-col items-end gap-2">
+          <div className={pctClass(cycle.value)}>{pctLabel(cycle.value)}</div>
+          <div className="phase-trend-row">
+            <span className={arrowBadgeClass(cycle.arrow)} aria-hidden>
+              {cycle.arrow}
+            </span>
+            <span className="phase-trend-label">{trendLabel(cycle.arrow)}</span>
+          </div>
+        </div>
       </div>
-      <div className="flex flex-col items-end gap-2">
-        <div className={pctClass(cycle.value)}>{pctLabel(cycle.value)}</div>
-        <span className={arrowBadgeClass(cycle.arrow)} aria-hidden>
-          {cycle.arrow}
-        </span>
-      </div>
+      <CycleSparkline cycle={cycle} />
     </div>
   );
 }
