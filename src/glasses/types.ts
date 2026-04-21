@@ -30,5 +30,5 @@ export interface HudLayoutDescriptor {
 export interface HudRenderState {
   layout: HudLayoutDescriptor;
   textContents: Record<string, string>;
-  imageContents?: Record<string, Uint8Array>;
+  imageContents?: Record<string, number[]>;
 }

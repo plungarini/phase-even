@@ -11,14 +11,14 @@ export const HUD_BORDER_RADIUS = 8;
 export const CONTAINER = {
   shield: 'shield',
   header: 'header',
-  body: 'body',
   frame: 'frame',
-  physicalRow: 'physical-row',
-  emotionalRow: 'emotional-row',
-  intellectualRow: 'intellectual-row',
-  physicalChart: 'physical-chart',
-  emotionalChart: 'emotional-chart',
-  intellectualChart: 'intellectual-chart',
+  emptyBody: 'empty-body',
+  physicalRow: 'phys-row',
+  emotionalRow: 'emo-row',
+  intellectualRow: 'intel-row',
+  physicalChart: 'phys-chart',
+  emotionalChart: 'emo-chart',
+  intellectualChart: 'intel-chart',
 } as const;
 
 const HEADER_HEIGHT = 40;
@@ -40,47 +40,8 @@ const EMOTIONAL_ROW_Y = PHYSICAL_ROW_Y + ROW_HEIGHT + ROW_GAP;
 const INTELLECTUAL_ROW_Y = EMOTIONAL_ROW_Y + ROW_HEIGHT + ROW_GAP;
 const CHART_Y_OFFSET = 8;
 
-export const EMPTY_LAYOUT: HudLayoutDescriptor = {
-  key: 'phase.empty.v1',
-  textDescriptors: [
-    {
-      containerID: 0,
-      containerName: CONTAINER.shield,
-      xPosition: 0,
-      yPosition: 0,
-      width: HUD_WIDTH,
-      height: HUD_HEIGHT,
-      borderWidth: 0,
-      paddingLength: 0,
-      isEventCapture: 1,
-    },
-    {
-      containerID: 1,
-      containerName: CONTAINER.header,
-      xPosition: 12,
-      yPosition: 0,
-      width: HUD_WIDTH - 24,
-      height: HEADER_HEIGHT,
-      paddingLength: 4,
-    },
-    {
-      containerID: 2,
-      containerName: CONTAINER.body,
-      xPosition: 0,
-      yPosition: BODY_Y,
-      width: HUD_WIDTH,
-      height: BODY_HEIGHT,
-      paddingLength: 15,
-      borderWidth: 1,
-      borderColor: 13,
-      borderRadius: HUD_BORDER_RADIUS,
-      isEventCapture: 0,
-    },
-  ],
-};
-
 export const CHART_LAYOUT: HudLayoutDescriptor = {
-  key: 'phase.chart.v3',
+  key: 'phase.root.v4',
   textDescriptors: [
     {
       containerID: 0,
@@ -116,6 +77,15 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
     },
     {
       containerID: 3,
+      containerName: CONTAINER.emptyBody,
+      xPosition: 22,
+      yPosition: 64,
+      width: HUD_WIDTH - 44,
+      height: 172,
+      paddingLength: 6,
+    },
+    {
+      containerID: 4,
       containerName: CONTAINER.physicalRow,
       xPosition: ROW_X,
       yPosition: PHYSICAL_ROW_Y,
@@ -124,7 +94,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       paddingLength: ROW_PADDING,
     },
     {
-      containerID: 4,
+      containerID: 5,
       containerName: CONTAINER.emotionalRow,
       xPosition: ROW_X,
       yPosition: EMOTIONAL_ROW_Y,
@@ -133,7 +103,7 @@ export const CHART_LAYOUT: HudLayoutDescriptor = {
       paddingLength: ROW_PADDING,
     },
     {
-      containerID: 5,
+      containerID: 6,
       containerName: CONTAINER.intellectualRow,
       xPosition: ROW_X,
       yPosition: INTELLECTUAL_ROW_Y,

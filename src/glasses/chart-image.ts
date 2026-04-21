@@ -3,35 +3,45 @@ import { cycleValue, sampleCycleCurve } from '../biorhythm';
 import { canvasToPngBytes } from 'even-toolkit/png-utils';
 
 const SAMPLE_COUNT = 48;
-
-type ChartCanvas = {
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
-};
-
-let cachedCanvas: ChartCanvas | null = null;
-
-function getCanvas(width: number, height: number): ChartCanvas {
-  if (!cachedCanvas || cachedCanvas.canvas.width !== width || cachedCanvas.canvas.height !== height) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    cachedCanvas = { canvas, ctx: canvas.getContext('2d')! };
-  }
-  return cachedCanvas;
-}
+const chartPngCache = new Map<string, number[]>();
+const blankPngCache = new Map<string, number[]>();
 
 function yForValue(value: number, height: number, paddingY: number): number {
   const innerHeight = height - paddingY * 2;
   return paddingY + (1 - (value + 1) / 2) * innerHeight;
 }
 
+function createCanvas(width: number, height: number): {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+} {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return { canvas, ctx: canvas.getContext('2d')! };
+}
+
+function cacheKey(cycle: CycleSnapshot, width: number, height: number): string {
+  return [
+    width,
+    height,
+    cycle.key,
+    cycle.period,
+    cycle.day,
+    Math.round(cycle.value * 10_000),
+  ].join(':');
+}
+
 export async function renderCycleChartPng(
   cycle: CycleSnapshot,
   width: number,
   height: number,
-): Promise<Uint8Array> {
-  const { canvas, ctx } = getCanvas(width, height);
+): Promise<number[]> {
+  const key = cacheKey(cycle, width, height);
+  const cached = chartPngCache.get(key);
+  if (cached) return cached;
+
+  const { canvas, ctx } = createCanvas(width, height);
   const paddingX = 6;
   const paddingY = 7;
   const values = sampleCycleCurve(cycle.period, SAMPLE_COUNT);
@@ -77,5 +87,20 @@ export async function renderCycleChartPng(
   ctx.fill();
 
   const bytes = await canvasToPngBytes(canvas);
-  return Uint8Array.from(bytes);
+  chartPngCache.set(key, bytes);
+  return bytes;
+}
+
+export async function renderBlankChartPng(width: number, height: number): Promise<number[]> {
+  const key = `${width}x${height}`;
+  const cached = blankPngCache.get(key);
+  if (cached) return cached;
+
+  const { canvas, ctx } = createCanvas(width, height);
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, width, height);
+  const bytes = await canvasToPngBytes(canvas);
+  blankPngCache.set(key, bytes);
+  return bytes;
 }

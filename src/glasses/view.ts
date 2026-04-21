@@ -1,14 +1,13 @@
 // view.ts — Format PhaseState into HUD text and image containers.
 
 import type { CycleSnapshot } from '../biorhythm';
-import { renderCycleChartPng } from './chart-image';
+import { renderBlankChartPng, renderCycleChartPng } from './chart-image';
 import {
   BODY_INNER_PX,
   CHART_HEIGHT,
   CHART_LAYOUT,
   CHART_WIDTH,
   CONTAINER,
-  EMPTY_LAYOUT,
   HEADER_INNER_PX,
   ROW_INNER_PX,
 } from './layout';
@@ -58,19 +57,33 @@ export async function renderHudState(state: PhaseState): Promise<HudRenderState>
   const header = alignRow(`${clock}   •   ${formatHeaderDate(state.today)}`, 'phase', HEADER_INNER_PX);
 
   if (!state.birthDate || state.cycles.length !== 3) {
-    const body = [
+    const emptyBody = [
       '',
       centerLine('Set your birth date', BODY_INNER_PX),
       centerLine('in the Phase app on your phone', BODY_INNER_PX),
       '',
       centerLine('Stored only on this device', BODY_INNER_PX),
     ].join('\n');
+    const blankCharts = await Promise.all([
+      renderBlankChartPng(CHART_WIDTH, CHART_HEIGHT),
+      renderBlankChartPng(CHART_WIDTH, CHART_HEIGHT),
+      renderBlankChartPng(CHART_WIDTH, CHART_HEIGHT),
+    ]);
     return {
-      layout: EMPTY_LAYOUT,
+      layout: CHART_LAYOUT,
       textContents: {
         [CONTAINER.shield]: ' ',
         [CONTAINER.header]: header,
-        [CONTAINER.body]: body,
+        [CONTAINER.frame]: ' ',
+        [CONTAINER.emptyBody]: emptyBody,
+        [CONTAINER.physicalRow]: ' ',
+        [CONTAINER.emotionalRow]: ' ',
+        [CONTAINER.intellectualRow]: ' ',
+      },
+      imageContents: {
+        [CONTAINER.physicalChart]: blankCharts[0],
+        [CONTAINER.emotionalChart]: blankCharts[1],
+        [CONTAINER.intellectualChart]: blankCharts[2],
       },
     };
   }
@@ -88,6 +101,7 @@ export async function renderHudState(state: PhaseState): Promise<HudRenderState>
       [CONTAINER.shield]: ' ',
       [CONTAINER.header]: header,
       [CONTAINER.frame]: ' ',
+      [CONTAINER.emptyBody]: ' ',
       [CONTAINER.physicalRow]: rowText('Physical', phys),
       [CONTAINER.emotionalRow]: rowText('Emotional', emo),
       [CONTAINER.intellectualRow]: rowText('Intellect', intel),

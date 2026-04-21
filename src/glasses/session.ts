@@ -10,6 +10,7 @@ import {
   CreateStartUpPageContainer,
   ImageContainerProperty,
   ImageRawDataUpdate,
+  ImageRawDataUpdateResult,
   RebuildPageContainer,
   StartUpPageCreateResult,
   TextContainerProperty,
@@ -21,10 +22,16 @@ import type { HudLayoutDescriptor, HudRenderState } from './types';
 
 const MAX_CONTENT_CHARS = 900;  // startup/rebuild cap per SDK docs (1000, with headroom)
 
+let startupAttempted = false;
 let pageCreated = false;
 let activeLayoutKey: string | null = null;
 let lastContents: Record<string, string> = {};
 let lastImageHashes: Record<string, number> = {};
+let firstImagePass = true;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function truncate(v: string, max: number): string {
   return v.length <= max ? v : v.slice(0, Math.max(0, max - 1)) + '…';
@@ -49,7 +56,7 @@ function instantiate(layout: HudLayoutDescriptor, contents: Record<string, strin
   };
 }
 
-function hashBytes(bytes: Uint8Array): number {
+function hashBytes(bytes: number[]): number {
   let hash = 0x811c9dc5;
   for (let i = 0; i < bytes.length; i++) {
     hash ^= bytes[i]!;
@@ -62,9 +69,16 @@ export class HudSession {
   constructor(private readonly bridge: EvenAppBridge) {}
 
   async render(next: HudRenderState): Promise<void> {
+    console.log('[HudSession] render start', {
+      layout: next.layout.key,
+      textCount: next.layout.textDescriptors.length,
+      imageCount: next.layout.imageDescriptors?.length ?? 0,
+    });
     const params = instantiate(next.layout, next.textContents);
 
-    if (!pageCreated) {
+    if (!startupAttempted) {
+      startupAttempted = true;
+      console.log('[HudSession] first startup-page attempt');
       let result: StartUpPageCreateResult;
       try {
         result = await this.bridge.createStartUpPageContainer(
@@ -78,11 +92,18 @@ export class HudSession {
         pageCreated = true;
         activeLayoutKey = next.layout.key;
         lastContents = { ...next.textContents };
+        console.log('[HudSession] startup page created');
         await this.applyImages(next, true);
         return;
       }
-      // The SDK may already have a page (e.g., HMR reload). Fall back to rebuild.
-      console.warn('[HudSession] createStartUpPageContainer non-success:', result, '— rebuilding');
+      // Fall back to rebuild for any subsequent attempt in this app lifetime.
+      console.warn('[HudSession] createStartUpPageContainer non-success:', result, '— falling back to rebuild');
+      await this.rebuild(next, params);
+      return;
+    }
+
+    if (!pageCreated) {
+      console.log('[HudSession] startup already attempted; trying rebuild only');
       await this.rebuild(next, params);
       return;
     }
@@ -106,6 +127,8 @@ export class HudSession {
       activeLayoutKey = next.layout.key;
       lastContents = { ...next.textContents };
       lastImageHashes = {};
+      firstImagePass = true;
+      console.log('[HudSession] rebuild complete');
       await this.applyImages(next, true);
     } catch (err) {
       console.error('[HudSession] rebuildPageContainer threw', err);
@@ -142,20 +165,36 @@ export class HudSession {
   private async applyImages(next: HudRenderState, force: boolean): Promise<void> {
     if (!next.layout.imageDescriptors?.length || !next.imageContents) return;
 
+    if (force && firstImagePass) {
+      console.log('[HudSession] settling before first image pass');
+      await sleep(350);
+      firstImagePass = false;
+    }
+
     for (const d of next.layout.imageDescriptors) {
       const bytes = next.imageContents[d.containerName];
       if (!bytes?.length) continue;
       const hash = hashBytes(bytes);
       if (!force && lastImageHashes[d.containerName] === hash) continue;
       try {
-        await this.bridge.updateImageRawData(
+        const result = await this.bridge.updateImageRawData(
           new ImageRawDataUpdate({
             containerID: d.containerID,
             containerName: d.containerName,
             imageData: bytes,
           }),
         );
+        if (!ImageRawDataUpdateResult.isSuccess(result)) {
+          console.error('[HudSession] updateImageRawData failed', {
+            container: d.containerName,
+            result,
+          });
+          await sleep(50);
+          continue;
+        }
         lastImageHashes[d.containerName] = hash;
+        console.log('[HudSession] image updated', d.containerName);
+        await sleep(50);
       } catch (err) {
         console.error('[HudSession] updateImageRawData threw', err, 'container:', d.containerName);
       }
