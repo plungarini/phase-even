@@ -11,6 +11,7 @@
     "emulator": "npx evenhub-simulator http://localhost:5173/"
   },
   "dependencies": {
+    "@evenrealities/pretext": "^0.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "even-toolkit": "^1.5.0",
@@ -21,9 +22,9 @@
     "upng-js": "^2.1.0"
   },
   "devDependencies": {
-    "@evenrealities/even_hub_sdk": "^0.0.9",
-    "@evenrealities/evenhub-cli": "^0.1.11",
-    "@evenrealities/evenhub-simulator": "^0.6.2",
+    "@evenrealities/even_hub_sdk": "^0.0.10",
+    "@evenrealities/evenhub-cli": "^0.1.12",
+    "@evenrealities/evenhub-simulator": "^0.7.2",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",

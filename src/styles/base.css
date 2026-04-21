@@ -1,0 +1,42 @@
+@layer base {
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    background:
+      radial-gradient(circle at 14% 12%, rgba(125, 255, 154, 0.08), transparent 32%),
+      radial-gradient(circle at 82% 88%, rgba(125, 255, 154, 0.055), transparent 36%),
+      linear-gradient(180deg, #0b100c, #06090a);
+    color: var(--phase-text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  #root {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@keyframes phase-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phase-fade-in {
+  animation: phase-fade-in 260ms ease-out;
+}

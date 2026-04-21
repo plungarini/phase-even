@@ -1,16 +1,14 @@
 {
-  "package_id": "com.plungarini.phase",
-  "name": "Phase",
-  "version": "0.0.0",
-  "edition": "202601",
-  "entrypoint": "index.html",
-  "description": "Phase app for Even Realities glasses",
-  "author": "plungarini",
-  "permissions": [],
-  "supported_languages": [
-    "en"
-  ],
-  "tagline": "",
-  "min_app_version": "2.1.1",
-  "min_sdk_version": "0.0.9"
+	"author": "plungarini",
+	"description": "Phase is an arcane biorhythm reader for Even Realities glasses.",
+	"edition": "202601",
+	"entrypoint": "index.html",
+	"min_app_version": "2.1.1",
+	"min_sdk_version": "0.0.9",
+	"name": "Phase",
+	"package_id": "com.plungarini.phase",
+	"permissions": [],
+	"supported_languages": ["en"],
+	"tagline": "Read the hidden rhythm of your days.",
+	"version": "0.1.0"
 }
