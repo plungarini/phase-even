@@ -11,6 +11,7 @@ export const HUD_BORDER_RADIUS = 8;
 export const CONTAINER = {
   shield: 'shield',
   header: 'header',
+  body: 'body',
   frame: 'frame',
   emptyBody: 'empty-body',
   physicalRow: 'phys-row',
@@ -39,6 +40,45 @@ const PHYSICAL_ROW_Y = ROW_START_Y;
 const EMOTIONAL_ROW_Y = PHYSICAL_ROW_Y + ROW_HEIGHT + ROW_GAP;
 const INTELLECTUAL_ROW_Y = EMOTIONAL_ROW_Y + ROW_HEIGHT + ROW_GAP;
 const CHART_Y_OFFSET = 8;
+
+export const EMPTY_LAYOUT: HudLayoutDescriptor = {
+  key: 'phase.empty.v5',
+  textDescriptors: [
+    {
+      containerID: 0,
+      containerName: CONTAINER.shield,
+      xPosition: 0,
+      yPosition: 0,
+      width: HUD_WIDTH,
+      height: HUD_HEIGHT,
+      borderWidth: 0,
+      paddingLength: 0,
+      isEventCapture: 1,
+    },
+    {
+      containerID: 1,
+      containerName: CONTAINER.header,
+      xPosition: 12,
+      yPosition: 0,
+      width: HUD_WIDTH - 24,
+      height: HEADER_HEIGHT,
+      paddingLength: 4,
+    },
+    {
+      containerID: 2,
+      containerName: CONTAINER.body,
+      xPosition: 0,
+      yPosition: BODY_Y,
+      width: HUD_WIDTH,
+      height: BODY_HEIGHT,
+      paddingLength: 15,
+      borderWidth: 1,
+      borderColor: 13,
+      borderRadius: HUD_BORDER_RADIUS,
+      isEventCapture: 0,
+    },
+  ],
+};
 
 export const CHART_LAYOUT: HudLayoutDescriptor = {
   key: 'phase.root.v4',
