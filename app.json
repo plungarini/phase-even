@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "edition": "202601",
   "entrypoint": "index.html",
-  "description": "Phase app for Even Realities glasses",
+  "description": "Beautiful debunked pseudoscience. Three sinusoidal cycles keyed to your birth date — Physical (23d), Emotional (28d), Intellectual (33d) — rendered as text waveforms on your HUD.",
   "author": "plungarini",
   "permissions": [],
   "supported_languages": [
     "en"
   ],
-  "tagline": "",
+  "tagline": "Biorhythm engine for your HUD",
   "min_app_version": "2.1.1",
   "min_sdk_version": "0.0.9"
 }

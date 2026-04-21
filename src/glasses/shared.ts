@@ -1,7 +1,12 @@
-// shared.ts — Global snapshot type for this app.
-// All glass screens read from AppSnapshot.
-// GlassAction (from even-toolkit/types) is the standard gesture type — no need to redefine it.
+// shared.ts — Global snapshot for the Phase app.
+
+import type { CycleSnapshot } from '../biorhythm';
 
 export interface AppSnapshot {
-  message: string;
+  /** ISO date string (YYYY-MM-DD), or null if user hasn't set birth date. */
+  birthDate: string | null;
+  /** Today's date as ISO (YYYY-MM-DD). */
+  today: string;
+  /** Pre-computed cycles (empty if birthDate is null). */
+  cycles: CycleSnapshot[];
 }
