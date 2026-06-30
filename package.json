@@ -11,7 +11,7 @@
 		"upng-js": "^2.1.0"
 	},
 	"devDependencies": {
-		"@evenrealities/even_hub_sdk": "^0.0.10",
+		"@evenrealities/even_hub_sdk": "^0.0.11",
 		"@evenrealities/evenhub-cli": "^0.1.12",
 		"@evenrealities/evenhub-simulator": "^0.7.2",
 		"@tailwindcss/vite": "^4.2.2",
